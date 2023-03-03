@@ -1,7 +1,7 @@
 import io
 import pandas as pd
 import streamlit as st
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import AgglomerativeClustering, KMeans
 
 # Define the app interface
 st.set_page_config(layout="wide", page_title="G25 Clustering App")
@@ -25,17 +25,25 @@ else:
 # Add a text input box for the user to edit the CSV data
 csv_data = st.text_area("Edit CSV data:", value=csv_data, height=300)
 
-# Add a number input to select the number of clusters
-n_clusters = st.number_input(
-    "Number of clusters:", min_value=2, max_value=64, value=3)
+# Add a row with clustering method and number of clusters
+col1, col2 = st.columns(2)
+with col1:
+    clustering_method = st.selectbox("Clustering method:", ["Ward", "K-means"])
+with col2:
+    n_clusters = st.number_input(
+        "Number of clusters:", min_value=2, max_value=64, value=3)
 
 # Add a button to perform clustering and display results
 if st.button("Cluster populations"):
     # Load data from CSV data
     data = pd.read_csv(io.StringIO(csv_data), index_col=0)
 
-    # Perform hierarchical clustering using Ward's method
-    cluster = AgglomerativeClustering(n_clusters=n_clusters, linkage="ward")
+    # Perform clustering using the selected method
+    if clustering_method == "Ward":
+        cluster = AgglomerativeClustering(
+            n_clusters=n_clusters, linkage="ward")
+    else:
+        cluster = KMeans(n_clusters=n_clusters)
     cluster.fit(data)
 
     # Create a dictionary of population lists, grouped by cluster
@@ -44,7 +52,15 @@ if st.button("Cluster populations"):
         pop_clusters[c+1].append(pop)
 
     # Print the populations in each cluster
-    output = ""
+    output = f"Clustering method: {clustering_method}\n\n"
     for c, pops in pop_clusters.items():
         output += f"Cluster {c}: {', '.join(pops)}\n"
+        if c < len(pop_clusters):
+            output += "\n"
     st.code(output)
+
+    # Add a download button for the output
+    file_name = f"clustering_output_{clustering_method}_{n_clusters}.txt"
+    file_bytes = output.encode("utf-8")
+    st.download_button(label="Download output",
+                       data=file_bytes, file_name=file_name)
