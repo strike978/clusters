@@ -36,7 +36,8 @@ with col2:
 # Add a button to perform clustering and display results
 if st.button("Cluster populations"):
     # Load data from CSV data
-    data = pd.read_csv(io.StringIO(csv_data), index_col=0)
+    data = pd.read_csv(io.StringIO(csv_data), header=None)
+    data.set_index(data.columns[0], inplace=True)
 
     # Perform clustering using the selected method
     if clustering_method == "Ward":
